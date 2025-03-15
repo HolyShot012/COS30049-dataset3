@@ -5,21 +5,21 @@ const cors = require("cors");
 const { runNeo4jQuery, runNeo4jQuery2 } = require("./neo4j");
 
 const app = express();
-app.use(cors());
+app.use(cors({ origin: "https://frontendweb3.onrender.com" })); // Restrict to frontend
 app.use(express.json());
 
 // Fetching API Keys from environment variables
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 const BITQUERY_API_KEY = process.env.BITQUERY_API_KEY;
 const BLOCKCYPHER_API_KEY = process.env.BLOCKCYPHER_API_KEY;
-const CHAINALYSIS_API_KEY = process.env.CHAINALYSIS_API_KEY; // Added Chainalysis API key
+const CHAINALYSIS_API_KEY = process.env.CHAINALYSIS_API_KEY;
 
 app.get("/api/chainalysis/:address", async (req, res) => {
   const { address } = req.params;
   try {
-    const response = await axios.get(`https://public.chainalysis.com/api/v1/address/${address}`, { // Verify endpoint
+    const response = await axios.get(`https://public.chainalysis.com/api/v1/address/${address}`, {
       headers: {
-        "X-API-Key":`${CHAINALYSIS_API_KEY}`,
+        "X-API-Key": `${CHAINALYSIS_API_KEY}`,
         "Accept": "application/json",
       },
     });
@@ -29,28 +29,19 @@ app.get("/api/chainalysis/:address", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-// New endpoint to serve API keys
-app.get("/api/keys", (req, res) => {
-  console.log("API keys requested");
-  res.json({
-    ETHERSCAN_API_KEY: ETHERSCAN_API_KEY,
-    BITQUERY_API_KEY: BITQUERY_API_KEY,
-    BLOCKCYPHER_API_KEY: BLOCKCYPHER_API_KEY,
-    CHAINALYSIS_API_KEY: CHAINALYSIS_API_KEY, // Added Chainalysis API key
-  });
-});
+
+// Removed /api/keys for security
+// app.get("/api/keys", (req, res) => { ... });
 
 // Existing endpoint: Fetch balance
 app.get("/api/balance/:coin/:address", async (req, res) => {
   const { coin, address } = req.params;
-
   try {
     if (coin.toLowerCase() === "bitcoin" || coin.toLowerCase() === "ethereum") {
       const network = coin.toLowerCase() === "bitcoin" ? "btc/main" : "eth/main";
       const response = await axios.get(
         `https://api.blockcypher.com/v1/${network}/addrs/${address}/balance${BLOCKCYPHER_API_KEY ? `?token=${BLOCKCYPHER_API_KEY}` : ""}`
       );
-
       return res.json({
         coin,
         address,
@@ -68,12 +59,10 @@ app.get("/api/balance/:coin/:address", async (req, res) => {
 // Existing endpoint: Fetch crypto price
 app.get("/api/crypto-price/:coinName", async (req, res) => {
   const { coinName } = req.params;
-
   try {
     const response = await axios.get(
       `https://api.coingecko.com/api/v3/simple/price?ids=${coinName}&vs_currencies=usd`
     );
-
     if (response.data[coinName] && response.data[coinName].usd) {
       res.json({ coin: coinName, price: response.data[coinName].usd });
     } else {
@@ -89,7 +78,6 @@ app.get("/api/crypto-price/:coinName", async (req, res) => {
 app.get("/api/sel/:address", async (req, res) => {
   const { address } = req.params;
   const query2 = `MATCH (n:Transactions) where n.from_address = "${address}" or n.to_address ="${address}" return n;`;
-
   try {
     const records = await runNeo4jQuery2(query2, address);
     res.json({ transactions: records });
@@ -301,8 +289,10 @@ app.get("/api/transactions/:address", async (req, res) => {
   }
 });
 
-// Start server
-const PORT = 5000;
+// Start server with dynamic port
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app; // Export for Render compatibility
