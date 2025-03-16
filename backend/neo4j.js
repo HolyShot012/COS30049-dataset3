@@ -7,7 +7,7 @@ const URI = process.env.NEO4J_URI;
 const USER = process.env.NEO4J_USERNAME;
 const PASSWORD = process.env.NEO4J_PASSWORD;
 const DATABASE = process.env.AURA_INSTANCENAME
-const query = "MATCH p=()-[r:`TRANSACTION`]->() RETURN p,r ;"
+
 async function runNeo4Query(query) {
   const driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
   let session;
