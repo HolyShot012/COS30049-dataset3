@@ -27,7 +27,7 @@ const SwapContainer = ({ handleOnClick, id, image, name }) => {
         {/* Show error message */}
         <Link
           to="/Dashboard"
-          state={{ address: input, id, image, name }}
+          state={{ address: input.toLowerCase(), id, image, name }}
           onClick={(e) => {
             if (!handleValidation()) {
               e.preventDefault(); // Stop navigation if invalid
